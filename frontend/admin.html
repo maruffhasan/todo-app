@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Panel</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 400px;
+      text-align: center;
+    }
+
+    h1, h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #357ae8;
+    }
+
+    .link {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .link a {
+      color: #4285f4;
+      text-decoration: none;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      background: #f1f1f1;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-info {
+      flex-grow: 1;
+      text-align: left;
+    }
+
+    #signup-section, #dashboard-section {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Panel</h1>
+
+    <!-- Login -->
+    <div id="login-section">
+      <h2>Login</h2>
+      <input id="login-username" placeholder="Username" />
+      <input id="login-password" type="password" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <p class="link">Don't have an account? <a href="#" onclick="showSignup()">Sign Up</a></p>
+    </div>
+
+    <!-- Signup -->
+    <div id="signup-section">
+      <h2>Sign Up</h2>
+      <input id="signup-name" placeholder="Full Name" />
+      <input id="signup-username" placeholder="Username" />
+      <input id="signup-password" type="password" placeholder="Password" />
+      <button onclick="signup()">Sign Up</button>
+      <p class="link">Already have an account? <a href="#" onclick="showLogin()">Login</a></p>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard-section">
+      <h2>Users</h2>
+      <p id="admin-welcome" style="font-weight: bold;"></p>
+      <ul id="user-list"></ul>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    const USERS_API = 'http://localhost:8080/api/users';
+    const SIGNUP_API = 'http://localhost:8080/api/user/signup';
+    const CURRENT_USER_API = 'http://localhost:8080/api/me';
+
+    let auth = localStorage.getItem('adminAuth') || '';
+
+    function getHeaders() {
+      return {
+        'Authorization': 'Basic ' + auth,
+        'Content-Type': 'application/json'
+      };
+    }
+
+    function showLogin() {
+      document.getElementById('signup-section').style.display = 'none';
+      document.getElementById('dashboard-section').style.display = 'none';
+      document.getElementById('login-section').style.display = 'block';
+    }
+
+    function showSignup() {
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('dashboard-section').style.display = 'none';
+      document.getElementById('signup-section').style.display = 'block';
+    }
+
+    function showDashboard() {
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('signup-section').style.display = 'none';
+      document.getElementById('dashboard-section').style.display = 'block';
+
+      // Fetch current user’s full name
+      fetch(CURRENT_USER_API, { headers: getHeaders() })
+        .then(res => res.json())
+        .then(user => {
+          document.getElementById('admin-welcome').innerText = `Logged in as: ${user.name}`;
+        });
+
+      fetchUsers();
+    }
+
+    function login() {
+      const user = document.getElementById('login-username').value;
+      const pass = document.getElementById('login-password').value;
+      if (!user || !pass) return alert("Enter username & password.");
+
+      auth = btoa(`${user}:${pass}`);
+      localStorage.setItem('adminAuth', auth);
+
+      fetch(USERS_API, { headers: getHeaders() })
+        .then(res => {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then(() => {
+          showDashboard();
+        })
+        .catch(() => {
+          alert("Login failed.");
+          localStorage.removeItem('adminAuth');
+          auth = '';
+        });
+    }
+
+    function signup() {
+      const name = document.getElementById('signup-name').value;
+      const username = document.getElementById('signup-username').value;
+      const password = document.getElementById('signup-password').value;
+
+      if (!name || !username || !password) return alert("Fill all fields.");
+      const role = "ROLE_ADMIN";
+
+      fetch(SIGNUP_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, username, password, role })
+      }).then(res => {
+        if (!res.ok) throw new Error();
+        alert("Signup successful. Please login.");
+        showLogin();
+      }).catch(() => alert("Signup failed."));
+    }
+
+    function fetchUsers() {
+      fetch(USERS_API, { headers: getHeaders() })
+        .then(res => res.json())
+        .then(users => {
+          const list = document.getElementById('user-list');
+          list.innerHTML = '';
+          users.forEach(u => {
+            const li = document.createElement('li');
+
+            const userInfo = document.createElement('div');
+            userInfo.className = 'user-info';
+            userInfo.textContent = `${u.name} (${u.username})`;
+
+            const del = document.createElement('button');
+            del.textContent = 'Delete';
+            del.onclick = () => deleteUser(u.id);
+
+            li.appendChild(userInfo);
+            li.appendChild(del);
+            list.appendChild(li);
+          });
+        });
+    }
+
+    function deleteUser(id) {
+      fetch(`http://localhost:8080/api/user/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+      }).then(fetchUsers);
+    }
+
+    function logout() {
+      localStorage.removeItem('adminAuth');
+      auth = '';
+      showLogin();
+    }
+
+    // Auto-login on refresh
+    if (auth) {
+      fetch(CURRENT_USER_API, { headers: getHeaders() })
+        .then(res => res.ok ? showDashboard() : logout())
+        .catch(logout);
+    } else {
+      showLogin();
+    }
+  </script>
+</body>
+</html>

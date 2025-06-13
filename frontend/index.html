@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Todo App</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 400px;
+      text-align: center;
+    }
+
+    h1, h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #357ae8;
+    }
+
+    .link {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .link a {
+      color: #4285f4;
+      text-decoration: none;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      background: #f1f1f1;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .todo-text {
+      flex-grow: 1;
+      text-align: left;
+    }
+
+    #todo-section, #signup-section {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Todo App</h1>
+
+    <!-- Login Form -->
+    <div id="login-section">
+      <h2>Login</h2>
+      <input type="text" id="login-username" placeholder="Username" /><br />
+      <input type="password" id="login-password" placeholder="Password" /><br />
+      <button onclick="login()">Login</button>
+      <p class="link">Don't have an account? <a href="#" onclick="showSignup()">Sign Up</a></p>
+    </div>
+
+    <!-- Signup Form -->
+    <div id="signup-section">
+      <h2>Sign Up</h2>
+      <input type="text" id="signup-fullname" placeholder="Full Name" /><br />
+      <input type="text" id="signup-username" placeholder="Username" /><br />
+      <input type="password" id="signup-password" placeholder="Password" /><br />
+      <button onclick="signup()">Sign Up</button>
+      <p class="link">Already have an account? <a href="#" onclick="showLogin()">Login</a></p>
+    </div>
+
+    <!-- Todo Section -->
+    <div id="todo-section">
+      <h2>Todo List</h2>
+      <p id="welcome-message" style="font-weight: bold;"></p>
+      <input type="text" id="new-todo" placeholder="Enter a new todo" />
+      <button onclick="addTodo()">Add</button>
+      <ul id="todo-list"></ul>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:8080/api/todo';
+    let credentials = localStorage.getItem('auth') || '';
+
+    function getAuthHeader() {
+      return {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json'
+      };
+    }
+
+    function showTodoSection() {
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('signup-section').style.display = 'none';
+      document.getElementById('todo-section').style.display = 'block';
+      fetchUserName();
+      fetchTodos();
+    }
+
+    function showSignup() {
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('signup-section').style.display = 'block';
+    }
+
+    function showLogin() {
+      document.getElementById('signup-section').style.display = 'none';
+      document.getElementById('login-section').style.display = 'block';
+    }
+
+    function login() {
+      const user = document.getElementById('login-username').value;
+      const pass = document.getElementById('login-password').value;
+      if (!user || !pass) return alert("Enter username and password.");
+      credentials = btoa(`${user}:${pass}`);
+      localStorage.setItem('auth', credentials);
+
+      fetch(API_URL, { headers: getAuthHeader() })
+        .then(res => {
+          if (!res.ok) throw new Error('Unauthorized');
+          return res.json();
+        })
+        .then(showTodoSection)
+        .catch(() => {
+          localStorage.removeItem('auth');
+          credentials = '';
+          alert("Login failed. Please check your credentials.");
+        });
+    }
+
+    function signup() {
+      const fullname = document.getElementById('signup-fullname').value;
+      const username = document.getElementById('signup-username').value;
+      const password = document.getElementById('signup-password').value;
+      const role = 'ROLE_USER';
+
+      if (!fullname || !username || !password) {
+        return alert("Fill all fields.");
+      }
+
+      fetch('http://localhost:8080/api/user/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: fullname, username, password, role })
+      })
+        .then(res => {
+          if (!res.ok) throw new Error("Signup failed");
+          alert("Signup successful! Please log in.");
+          showLogin();
+        })
+        .catch(() => alert("Signup failed. Try again."));
+    }
+
+    function logout() {
+      localStorage.removeItem('auth');
+      credentials = '';
+      document.getElementById('todo-list').innerHTML = '';
+      document.getElementById('welcome-message').textContent = '';
+      document.getElementById('todo-section').style.display = 'none';
+      showLogin();
+    }
+
+    function fetchUserName() {
+      fetch('http://localhost:8080/api/me', { headers: getAuthHeader() })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('welcome-message').textContent = `Welcome, ${data.name}!`;
+        });
+    }
+
+    function fetchTodos() {
+      fetch(API_URL, { headers: getAuthHeader() })
+        .then(res => res.json())
+        .then(todos => {
+          const list = document.getElementById('todo-list');
+          list.innerHTML = '';
+          todos.forEach(todo => {
+            const li = document.createElement('li');
+
+            const text = document.createElement('span');
+            text.className = 'todo-text';
+            text.textContent = todo.description;
+
+            const editBtn = document.createElement('button');
+            editBtn.textContent = 'Edit';
+            editBtn.onclick = () => editTodo(todo.id, text);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.onclick = () => deleteTodo(todo.id);
+
+            li.appendChild(text);
+            li.appendChild(editBtn);
+            li.appendChild(deleteBtn);
+            list.appendChild(li);
+          });
+        })
+        .catch(logout);
+    }
+
+    function addTodo() {
+      const input = document.getElementById('new-todo');
+      const description = input.value.trim();
+      if (!description) return;
+
+      fetch(API_URL, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify({ description })
+      }).then(() => {
+        input.value = '';
+        fetchTodos();
+      });
+    }
+
+    function deleteTodo(id) {
+      fetch(`${API_URL}/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeader()
+      }).then(fetchTodos);
+    }
+
+    function editTodo(id, textSpan) {
+      const currentText = textSpan.textContent;
+      const newText = prompt('Edit todo:', currentText);
+      if (newText === null || newText.trim() === '') return;
+
+      fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeader(),
+        body: JSON.stringify({ description: newText.trim() })
+      }).then(fetchTodos);
+    }
+
+    if (credentials) {
+      fetch(API_URL, { headers: getAuthHeader() })
+        .then(res => {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then(showTodoSection)
+        .catch(logout);
+    } else {
+      showLogin();
+    }
+  </script>
+</body>
+
+</html>
