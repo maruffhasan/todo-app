@@ -123,7 +123,7 @@
 
   <script>
     const API = 'https://todoapp-mytodoappbackend.onrender.com';
-    const API_URL = API + '/api/todo';
+    const API_URL = `${API}/api/todo`;
     let credentials = localStorage.getItem('auth') || '';
 
     function getAuthHeader() {
@@ -181,7 +181,7 @@
         return alert("Fill all fields.");
       }
 
-      fetch(`${API}api/user/signup`, {
+      fetch(`${API}/api/user/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: fullname, username, password, role })
@@ -204,7 +204,7 @@
     }
 
     function fetchUserName() {
-      fetch(`${API}api/me`, { headers: getAuthHeader() })
+      fetch(`${API}/api/me`, { headers: getAuthHeader() })
         .then(res => res.json())
         .then(data => {
           document.getElementById('welcome-message').textContent = `Welcome, ${data.name}!`;
