@@ -8,6 +8,16 @@ A simple and responsive TODO web application built with Spring Boot (backend) an
 
 ---
 
+## About Render Sleep Behavior
+
+This app is deployed on [Render](https://render.com/) free tier, which **puts the backend to sleep after a period of inactivity**.
+
+- When the app is asleep, the **first user request after waking up will take longer** because the backend needs to start again.
+- Users should expect a delay on the very first request after some idle time.
+- Subsequent requests will be faster as the backend stays awake for a while.
+
+---
+
 ## ✨ Features
 
 ### ✅ User Features
