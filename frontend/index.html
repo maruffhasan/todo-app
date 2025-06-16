@@ -181,7 +181,7 @@
         return alert("Fill all fields.");
       }
 
-      fetch('http://localhost:8080/api/user/signup', {
+      fetch(`${API}api/user/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: fullname, username, password, role })
@@ -204,7 +204,7 @@
     }
 
     function fetchUserName() {
-      fetch('http://localhost:8080/api/me', { headers: getAuthHeader() })
+      fetch(`${API}api/me`, { headers: getAuthHeader() })
         .then(res => res.json())
         .then(data => {
           document.getElementById('welcome-message').textContent = `Welcome, ${data.name}!`;
