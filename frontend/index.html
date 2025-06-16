@@ -84,12 +84,38 @@
     #todo-section, #signup-section {
       display: none;
     }
+
+    /* Loader spinner */
+    #loading {
+      margin: 20px 0;
+      display: none;
+    }
+
+    .spinner {
+      margin: 0 auto;
+      width: 40px;
+      height: 40px;
+      border: 5px solid #ddd;
+      border-top-color: #4285f4;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
     <h1>Todo App</h1>
+
+    <!-- Loader -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <p style="color:#666; font-style: italic;">Please wait, backend is starting up...</p>
+    </div>
 
     <!-- Login Form -->
     <div id="login-section">
@@ -133,6 +159,14 @@
       };
     }
 
+    function showLoading() {
+      document.getElementById('loading').style.display = 'block';
+    }
+
+    function hideLoading() {
+      document.getElementById('loading').style.display = 'none';
+    }
+
     function showTodoSection() {
       document.getElementById('login-section').style.display = 'none';
       document.getElementById('signup-section').style.display = 'none';
@@ -155,6 +189,9 @@
       const user = document.getElementById('login-username').value;
       const pass = document.getElementById('login-password').value;
       if (!user || !pass) return alert("Enter username and password.");
+
+      showLoading();
+
       credentials = btoa(`${user}:${pass}`);
       localStorage.setItem('auth', credentials);
 
@@ -163,8 +200,12 @@
           if (!res.ok) throw new Error('Unauthorized');
           return res.json();
         })
-        .then(showTodoSection)
+        .then(data => {
+          hideLoading();
+          showTodoSection();
+        })
         .catch(() => {
+          hideLoading();
           localStorage.removeItem('auth');
           credentials = '';
           alert("Login failed. Please check your credentials.");
@@ -181,17 +222,23 @@
         return alert("Fill all fields.");
       }
 
+      showLoading();
+
       fetch(`${API}/api/user/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: fullname, username, password, role })
       })
         .then(res => {
+          hideLoading();
           if (!res.ok) throw new Error("Signup failed");
           alert("Signup successful! Please log in.");
           showLogin();
         })
-        .catch(() => alert("Signup failed. Try again."));
+        .catch(() => {
+          hideLoading();
+          alert("Signup failed. Try again.");
+        });
     }
 
     function logout() {
@@ -212,9 +259,12 @@
     }
 
     function fetchTodos() {
+      showLoading();
+
       fetch(API_URL, { headers: getAuthHeader() })
         .then(res => res.json())
         .then(todos => {
+          hideLoading();
           const list = document.getElementById('todo-list');
           list.innerHTML = '';
           todos.forEach(todo => {
@@ -238,13 +288,18 @@
             list.appendChild(li);
           });
         })
-        .catch(logout);
+        .catch(() => {
+          hideLoading();
+          logout();
+        });
     }
 
     function addTodo() {
       const input = document.getElementById('new-todo');
       const description = input.value.trim();
       if (!description) return;
+
+      showLoading();
 
       fetch(API_URL, {
         method: 'POST',
@@ -257,6 +312,8 @@
     }
 
     function deleteTodo(id) {
+      showLoading();
+
       fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
         headers: getAuthHeader()
@@ -268,6 +325,8 @@
       const newText = prompt('Edit todo:', currentText);
       if (newText === null || newText.trim() === '') return;
 
+      showLoading();
+
       fetch(`${API_URL}/${id}`, {
         method: 'PUT',
         headers: getAuthHeader(),
@@ -276,13 +335,20 @@
     }
 
     if (credentials) {
+      showLoading();
       fetch(API_URL, { headers: getAuthHeader() })
         .then(res => {
           if (!res.ok) throw new Error();
           return res.json();
         })
-        .then(showTodoSection)
-        .catch(logout);
+        .then(data => {
+          hideLoading();
+          showTodoSection();
+        })
+        .catch(() => {
+          hideLoading();
+          logout();
+        });
     } else {
       showLogin();
     }
