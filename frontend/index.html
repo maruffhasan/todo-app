@@ -101,6 +101,7 @@
       border-radius: 10px;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
       z-index: 10;
     }
 
@@ -130,8 +131,9 @@
     <h1>Todo App</h1>
 
     <!-- Loading Spinner Overlay -->
-    <div id="loading-overlay" style="display:flex;">
+    <div id="loading-overlay">
       <div class="spinner"></div>
+      <p id="loading-message" style="margin-top: 10px; font-weight: bold; color: #333;">Please wait, server is starting...</p>
     </div>
 
     <!-- Login Form -->
@@ -169,10 +171,11 @@
     const API_URL = `${API}/api/todo`;
     let credentials = localStorage.getItem('auth') || '';
 
-    // Spinner control
     const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingMessage = document.getElementById('loading-message');
 
     function showLoading() {
+      loadingMessage.textContent = "⏳ Please wait, server is starting...";
       loadingOverlay.style.display = 'flex';
     }
 
@@ -180,9 +183,8 @@
       loadingOverlay.style.display = 'none';
     }
 
-    // Fetch wrapper with delayed spinner (5 seconds)
     function fetchWithDelayedLoading(url, options) {
-      let loadingTimeout = setTimeout(showLoading, 5000);
+      let loadingTimeout = setTimeout(showLoading, 5000); // Show after 5s
       return fetch(url, options)
         .finally(() => {
           clearTimeout(loadingTimeout);
@@ -215,7 +217,6 @@
       document.getElementById('login-section').style.display = 'block';
     }
 
-    // Login with delayed spinner
     function login() {
       const user = document.getElementById('login-username').value.trim();
       const pass = document.getElementById('login-password').value.trim();
@@ -237,7 +238,6 @@
         });
     }
 
-    // Signup with delayed spinner
     function signup() {
       const fullname = document.getElementById('signup-fullname').value.trim();
       const username = document.getElementById('signup-username').value.trim();
@@ -278,7 +278,6 @@
         });
     }
 
-    // No spinner for normal fetches
     function fetchTodos() {
       fetch(API_URL, { headers: getAuthHeader() })
         .then(res => res.json())
