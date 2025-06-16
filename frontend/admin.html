@@ -45,8 +45,13 @@
       cursor: pointer;
     }
 
-    button:hover {
+    button:hover:not(:disabled) {
       background-color: #357ae8;
+    }
+
+    button:disabled {
+      background-color: #a0a0a0;
+      cursor: not-allowed;
     }
 
     .link {
@@ -82,6 +87,13 @@
     #signup-section, #dashboard-section {
       display: none;
     }
+
+    .tooltip-text {
+      font-size: 12px;
+      color: #888;
+      margin-top: -10px;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -103,7 +115,8 @@
       <input id="signup-name" placeholder="Full Name" />
       <input id="signup-username" placeholder="Username" />
       <input id="signup-password" type="password" placeholder="Password" />
-      <button onclick="signup()">Sign Up</button>
+      <button onclick="signup()" disabled>Sign Up</button>
+      <p class="tooltip-text">Sign Up is disabled. This panel is only for admins.</p>
       <p class="link">Already have an account? <a href="#" onclick="showLogin()">Login</a></p>
     </div>
 
@@ -181,22 +194,8 @@
     }
 
     function signup() {
-      const name = document.getElementById('signup-name').value;
-      const username = document.getElementById('signup-username').value;
-      const password = document.getElementById('signup-password').value;
-
-      if (!name || !username || !password) return alert("Fill all fields.");
-      const role = "ROLE_ADMIN";
-
-      fetch(SIGNUP_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, username, password, role })
-      }).then(res => {
-        if (!res.ok) throw new Error();
-        alert("Signup successful. Please login.");
-        showLogin();
-      }).catch(() => alert("Signup failed."));
+      // Signup is disabled — no action
+      alert("Sign Up is disabled. Contact the administrator.");
     }
 
     function fetchUsers() {
