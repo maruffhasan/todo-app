@@ -12,7 +12,7 @@ A simple and responsive TODO web application built with Spring Boot (backend) an
 
 This app is deployed on [Render](https://render.com/) free tier, which **puts the backend to sleep after a period of inactivity**.
 
-- When the app is asleep, the **first user request after waking up will take longer** (usually around **40-50 seconds**) because the backend needs to start again.
+- When the app is asleep, the **first user request after waking up will take longer** (usually around **30-50 seconds**) because the backend needs to start again.
 - Users should expect a delay on the very first request after some idle time.
 - Subsequent requests will be faster as the backend stays awake for a while.
 
