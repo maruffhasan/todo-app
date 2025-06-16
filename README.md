@@ -126,8 +126,6 @@ Then backend is available at: [http://localhost:8080](http://localhost:8080)
 
 ## 🧪 Sample Admin Credentials
 
-Replace with actual credentials if needed.
-
 - **Username:** `maruf`
 - **Password:** `maruff`
 
