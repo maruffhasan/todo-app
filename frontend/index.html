@@ -122,7 +122,8 @@
   </div>
 
   <script>
-    const API_URL = 'http://localhost:8080/api/todo';
+    const API = 'https://todoapp-mytodoappbackend.onrender.com';
+    const API_URL = API + '/api/todo';
     let credentials = localStorage.getItem('auth') || '';
 
     function getAuthHeader() {

@@ -130,9 +130,10 @@
   </div>
 
   <script>
-    const USERS_API = 'http://localhost:8080/api/users';
-    const SIGNUP_API = 'http://localhost:8080/api/user/signup';
-    const CURRENT_USER_API = 'http://localhost:8080/api/me';
+    const API = 'https://todoapp-mytodoappbackend.onrender.com/';
+    const USERS_API = API + 'api/users';
+    const SIGNUP_API = API + 'api/user/signup';
+    const CURRENT_USER_API = API + '/api/me';
 
     let auth = localStorage.getItem('adminAuth') || '';
 
@@ -223,7 +224,7 @@
     }
 
     function deleteUser(id) {
-      fetch(`http://localhost:8080/api/user/${id}`, {
+      fetch(`${API}api/user/${id}`, {
         method: 'DELETE',
         headers: getHeaders()
       }).then(fetchUsers);
