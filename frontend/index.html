@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Todo App</title>
   <style>
     body {
@@ -20,13 +20,14 @@
       background: white;
       padding: 30px 40px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       width: 400px;
       text-align: center;
       position: relative;
     }
 
-    h1, h2 {
+    h1,
+    h2 {
       color: #333;
       margin-bottom: 20px;
     }
@@ -88,16 +89,18 @@
       display: none;
     }
 
-    /* Spinner overlay */
-    #loading-spinner {
+    /* Spinner Overlay */
+    #loading-overlay {
+      display: none;
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(255,255,255,0.8);
-      display: flex;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 10px;
       justify-content: center;
       align-items: center;
-      border-radius: 10px;
-      display: none;
       z-index: 10;
     }
 
@@ -105,14 +108,19 @@
       border: 6px solid #f3f3f3;
       border-top: 6px solid #4285f4;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 50px;
+      height: 50px;
       animation: spin 1s linear infinite;
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
   </style>
 </head>
@@ -121,8 +129,8 @@
   <div class="container">
     <h1>Todo App</h1>
 
-    <!-- Loading spinner -->
-    <div id="loading-spinner">
+    <!-- Loading Spinner Overlay -->
+    <div id="loading-overlay" style="display:flex;">
       <div class="spinner"></div>
     </div>
 
@@ -161,21 +169,18 @@
     const API_URL = `${API}/api/todo`;
     let credentials = localStorage.getItem('auth') || '';
 
-    function getAuthHeader() {
-      return {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json'
-      };
-    }
+    // Spinner control
+    const loadingOverlay = document.getElementById('loading-overlay');
 
     function showLoading() {
-      document.getElementById('loading-spinner').style.display = 'flex';
-    }
-    function hideLoading() {
-      document.getElementById('loading-spinner').style.display = 'none';
+      loadingOverlay.style.display = 'flex';
     }
 
-    // Helper to do fetch with 5 sec delayed loading spinner
+    function hideLoading() {
+      loadingOverlay.style.display = 'none';
+    }
+
+    // Fetch wrapper with delayed spinner (5 seconds)
     function fetchWithDelayedLoading(url, options) {
       let loadingTimeout = setTimeout(showLoading, 5000);
       return fetch(url, options)
@@ -183,6 +188,13 @@
           clearTimeout(loadingTimeout);
           hideLoading();
         });
+    }
+
+    function getAuthHeader() {
+      return {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json'
+      };
     }
 
     function showTodoSection() {
@@ -203,9 +215,10 @@
       document.getElementById('login-section').style.display = 'block';
     }
 
+    // Login with delayed spinner
     function login() {
-      const user = document.getElementById('login-username').value;
-      const pass = document.getElementById('login-password').value;
+      const user = document.getElementById('login-username').value.trim();
+      const pass = document.getElementById('login-password').value.trim();
       if (!user || !pass) return alert("Enter username and password.");
 
       credentials = btoa(`${user}:${pass}`);
@@ -224,10 +237,11 @@
         });
     }
 
+    // Signup with delayed spinner
     function signup() {
-      const fullname = document.getElementById('signup-fullname').value;
-      const username = document.getElementById('signup-username').value;
-      const password = document.getElementById('signup-password').value;
+      const fullname = document.getElementById('signup-fullname').value.trim();
+      const username = document.getElementById('signup-username').value.trim();
+      const password = document.getElementById('signup-password').value.trim();
       const role = 'ROLE_USER';
 
       if (!fullname || !username || !password) {
@@ -257,16 +271,16 @@
     }
 
     function fetchUserName() {
-      fetchWithDelayedLoading(`${API}/api/me`, { headers: getAuthHeader() })
+      fetch(`${API}/api/me`, { headers: getAuthHeader() })
         .then(res => res.json())
         .then(data => {
           document.getElementById('welcome-message').textContent = `Welcome, ${data.name}!`;
-        })
-        .catch(() => {});
+        });
     }
 
+    // No spinner for normal fetches
     function fetchTodos() {
-      fetchWithDelayedLoading(API_URL, { headers: getAuthHeader() })
+      fetch(API_URL, { headers: getAuthHeader() })
         .then(res => res.json())
         .then(todos => {
           const list = document.getElementById('todo-list');
@@ -300,7 +314,7 @@
       const description = input.value.trim();
       if (!description) return;
 
-      fetchWithDelayedLoading(API_URL, {
+      fetch(API_URL, {
         method: 'POST',
         headers: getAuthHeader(),
         body: JSON.stringify({ description })
@@ -311,7 +325,7 @@
     }
 
     function deleteTodo(id) {
-      fetchWithDelayedLoading(`${API_URL}/${id}`, {
+      fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
         headers: getAuthHeader()
       }).then(fetchTodos);
@@ -322,15 +336,16 @@
       const newText = prompt('Edit todo:', currentText);
       if (newText === null || newText.trim() === '') return;
 
-      fetchWithDelayedLoading(`${API_URL}/${id}`, {
+      fetch(`${API_URL}/${id}`, {
         method: 'PUT',
         headers: getAuthHeader(),
         body: JSON.stringify({ description: newText.trim() })
       }).then(fetchTodos);
     }
 
+    // On page load, auto login if credentials exist
     if (credentials) {
-      fetchWithDelayedLoading(API_URL, { headers: getAuthHeader() })
+      fetch(API_URL, { headers: getAuthHeader() })
         .then(res => {
           if (!res.ok) throw new Error();
           return res.json();
