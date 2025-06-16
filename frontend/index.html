@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Todo App</title>
   <style>
     body {
@@ -13,6 +13,7 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
 
     .container {
@@ -22,6 +23,7 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       width: 400px;
       text-align: center;
+      position: relative;
     }
 
     h1, h2 {
@@ -81,28 +83,36 @@
       text-align: left;
     }
 
-    #todo-section, #signup-section {
+    #todo-section,
+    #signup-section {
       display: none;
     }
 
-    /* Loader spinner */
-    #loading {
-      margin: 20px 0;
+    /* Spinner overlay */
+    #loading-spinner {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 10px;
       display: none;
+      z-index: 10;
     }
 
     .spinner {
-      margin: 0 auto;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #4285f4;
+      border-radius: 50%;
       width: 40px;
       height: 40px;
-      border: 5px solid #ddd;
-      border-top-color: #4285f4;
-      border-radius: 50%;
       animation: spin 1s linear infinite;
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
     }
   </style>
 </head>
@@ -111,10 +121,9 @@
   <div class="container">
     <h1>Todo App</h1>
 
-    <!-- Loader -->
-    <div id="loading">
+    <!-- Loading spinner -->
+    <div id="loading-spinner">
       <div class="spinner"></div>
-      <p style="color:#666; font-style: italic;">Please wait, backend is starting up...</p>
     </div>
 
     <!-- Login Form -->
@@ -160,11 +169,20 @@
     }
 
     function showLoading() {
-      document.getElementById('loading').style.display = 'block';
+      document.getElementById('loading-spinner').style.display = 'flex';
+    }
+    function hideLoading() {
+      document.getElementById('loading-spinner').style.display = 'none';
     }
 
-    function hideLoading() {
-      document.getElementById('loading').style.display = 'none';
+    // Helper to do fetch with 5 sec delayed loading spinner
+    function fetchWithDelayedLoading(url, options) {
+      let loadingTimeout = setTimeout(showLoading, 5000);
+      return fetch(url, options)
+        .finally(() => {
+          clearTimeout(loadingTimeout);
+          hideLoading();
+        });
     }
 
     function showTodoSection() {
@@ -190,22 +208,16 @@
       const pass = document.getElementById('login-password').value;
       if (!user || !pass) return alert("Enter username and password.");
 
-      showLoading();
-
       credentials = btoa(`${user}:${pass}`);
       localStorage.setItem('auth', credentials);
 
-      fetch(API_URL, { headers: getAuthHeader() })
+      fetchWithDelayedLoading(API_URL, { headers: getAuthHeader() })
         .then(res => {
           if (!res.ok) throw new Error('Unauthorized');
           return res.json();
         })
-        .then(data => {
-          hideLoading();
-          showTodoSection();
-        })
+        .then(showTodoSection)
         .catch(() => {
-          hideLoading();
           localStorage.removeItem('auth');
           credentials = '';
           alert("Login failed. Please check your credentials.");
@@ -222,23 +234,17 @@
         return alert("Fill all fields.");
       }
 
-      showLoading();
-
-      fetch(`${API}/api/user/signup`, {
+      fetchWithDelayedLoading(`${API}/api/user/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: fullname, username, password, role })
       })
         .then(res => {
-          hideLoading();
           if (!res.ok) throw new Error("Signup failed");
           alert("Signup successful! Please log in.");
           showLogin();
         })
-        .catch(() => {
-          hideLoading();
-          alert("Signup failed. Try again.");
-        });
+        .catch(() => alert("Signup failed. Try again."));
     }
 
     function logout() {
@@ -251,20 +257,18 @@
     }
 
     function fetchUserName() {
-      fetch(`${API}/api/me`, { headers: getAuthHeader() })
+      fetchWithDelayedLoading(`${API}/api/me`, { headers: getAuthHeader() })
         .then(res => res.json())
         .then(data => {
           document.getElementById('welcome-message').textContent = `Welcome, ${data.name}!`;
-        });
+        })
+        .catch(() => {});
     }
 
     function fetchTodos() {
-      showLoading();
-
-      fetch(API_URL, { headers: getAuthHeader() })
+      fetchWithDelayedLoading(API_URL, { headers: getAuthHeader() })
         .then(res => res.json())
         .then(todos => {
-          hideLoading();
           const list = document.getElementById('todo-list');
           list.innerHTML = '';
           todos.forEach(todo => {
@@ -288,10 +292,7 @@
             list.appendChild(li);
           });
         })
-        .catch(() => {
-          hideLoading();
-          logout();
-        });
+        .catch(logout);
     }
 
     function addTodo() {
@@ -299,9 +300,7 @@
       const description = input.value.trim();
       if (!description) return;
 
-      showLoading();
-
-      fetch(API_URL, {
+      fetchWithDelayedLoading(API_URL, {
         method: 'POST',
         headers: getAuthHeader(),
         body: JSON.stringify({ description })
@@ -312,9 +311,7 @@
     }
 
     function deleteTodo(id) {
-      showLoading();
-
-      fetch(`${API_URL}/${id}`, {
+      fetchWithDelayedLoading(`${API_URL}/${id}`, {
         method: 'DELETE',
         headers: getAuthHeader()
       }).then(fetchTodos);
@@ -325,9 +322,7 @@
       const newText = prompt('Edit todo:', currentText);
       if (newText === null || newText.trim() === '') return;
 
-      showLoading();
-
-      fetch(`${API_URL}/${id}`, {
+      fetchWithDelayedLoading(`${API_URL}/${id}`, {
         method: 'PUT',
         headers: getAuthHeader(),
         body: JSON.stringify({ description: newText.trim() })
@@ -335,20 +330,13 @@
     }
 
     if (credentials) {
-      showLoading();
-      fetch(API_URL, { headers: getAuthHeader() })
+      fetchWithDelayedLoading(API_URL, { headers: getAuthHeader() })
         .then(res => {
           if (!res.ok) throw new Error();
           return res.json();
         })
-        .then(data => {
-          hideLoading();
-          showTodoSection();
-        })
-        .catch(() => {
-          hideLoading();
-          logout();
-        });
+        .then(showTodoSection)
+        .catch(logout);
     } else {
       showLogin();
     }
